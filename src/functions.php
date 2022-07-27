@@ -340,3 +340,96 @@
         $smarty->display('user_profile.html');
 
     }
+
+    // [GET] /pictures
+    function getPicturesIndex($smarty, $dbh) {
+
+        $smarty->assign('_SESSION', $_SESSION);
+        $smarty->display('picture-gallery.html');
+
+    }
+
+    // [POST] /pictures
+    function postNewPicture($smarty, $dbh) {
+        
+        if (isset($_POST['submit'])) {
+
+            $err_msg = false;
+
+            if(!isset($_FILES['file'])) {
+                $err_msg .= 'Please select a picture to upload!';
+            }
+
+            if ($err_msg == false) {
+
+                // variable to check errors during upload
+                $uploadOk = true;
+                // directory to upload the file into
+                $target_dir = '/opt/lampp/htdocs/picture_uploads/';
+                
+                // original filename
+                $originalFilename = $_FILES['file']['name'];
+                // cut the filename out of the string to get the file-extension
+                $fileextension = pathinfo($originalFilename, PATHINFO_EXTENSION);
+                // generate uuid v4 for the extension and combine it with the target directory and the
+                // file extension
+                $target_filename = $target_dir . $_FILES['file']['name'];                
+                // size of the uploaded file
+                $filesize = $_FILES['file']['size'];
+
+                // check if the uploaded picture is realy a picture
+                if ($fileextension != 'jpg' && $fileextension != 'jpeg' && $fileextension != 'png' && $fileextension != 'gif') {
+                    $err_msg .= 'Your uploaded picture is not a picture!';
+                    $uploadOk = false;
+                }
+                
+                // check if the filename already exist
+                if (file_exists($target_filename)) {
+                    $err_msg .= 'The uploaded file already exist...';
+                    $uploadOk = false;
+                }
+
+                if ($uploadOk == false) {
+                    $err_msg .= 'Your file was not uploaded...';
+                }
+                
+                // move uploaded file to targer directory if all is okay
+                if ($uploadOk == true) {
+                    
+                    
+                    if(move_uploaded_file($_FILES['files']['tmp_name'], __DIR__ . '/../picture_uploads/'.$_FILES['file']['name'])) {
+                        $smarty->assign('_SESSION', $_SESSION);
+                        $smarty->display('upload_success.html');
+                    } else {
+                        echo 'nööööööööö';
+                        echo $_FILES['file']['error'];
+                    }
+                }
+                
+
+            }
+
+        }
+
+    }
+
+
+
+
+
+
+
+    // function for generating uuidv4 ids for the filenames.
+    function uuidv4($data = null) {
+        // Generate 16 bytes (128 bits) of random data or use the data passed into the function.
+        $data = $data ?? random_bytes(16);
+        assert(strlen($data) == 16);
+    
+        // Set version to 0100
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+        // Set bits 6-7 to 10
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+    
+        // Output the 36 character UUID.
+        return vsprintf('%s%s_%s_%s_%s_%s%s%s', str_split(bin2hex($data), 4));
+    }

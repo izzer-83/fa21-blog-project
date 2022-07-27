@@ -65,6 +65,15 @@
         getUserProfile($smarty, $dbh);
     });
 
+    // [GET] route to view the uploaded pictures
+    $router->get('/pictures', function() use ($smarty, $dbh) {
+        getPicturesIndex($smarty, $dbh);
+    });
+
+    $router->post('/pictures', function() use ($smarty, $dbh) {
+        postNewPicture($smarty, $dbh);
+    });
+
     // run the router
     $router->run();
 
