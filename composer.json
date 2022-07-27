@@ -1,0 +1,17 @@
+{
+    "name": "tk/blog",
+    "autoload": {
+        "psr-4": {
+            "Tk\\Blog\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "tk"
+        }
+    ],
+    "require": {
+        "bramus/router": "^1.6",
+        "smarty/smarty": "^4.1"
+    }
+}
