@@ -9,8 +9,7 @@
     
 
     // [GET] index route
-    $router->get('/', function() use ($smarty, $dbh)
-    {          
+    $router->get('/', function() use ($smarty, $dbh) {          
         getIndex($smarty, $dbh);
     });
 
@@ -31,8 +30,7 @@
 
     // [POST] route to query the database, do the login and start the session
     // for the user
-    $router->post('/login', function() use ($smarty, $dbh) {
-        
+    $router->post('/login', function() use ($smarty, $dbh) {        
         postLogin($smarty,$dbh);
     });
 
