@@ -74,6 +74,26 @@
         postNewPicture($smarty, $dbh);
     });
 
+    $router->get('/profile/posts/edit/(\d+)', function($postID) use ($smarty, $dbh)
+    {
+        getEditBlogPost($smarty, $dbh, $postID);
+    });
+    
+    $router->post('/profile/posts/edit/(\d+)', function($postID) use ($smarty, $dbh)
+    {
+        postEditBlogPost($smarty, $dbh, $postID);
+    });
+
+    $router->get('/profile/posts/delete/(\d+)', function($postID) use ($smarty, $dbh)
+    {
+        getDelPost($smarty, $dbh, $postID);
+    });
+
+    $router->get('/profile/pictures/delete/(\d+)', function($pictureID) use ($smarty, $dbh)
+    {
+        getDelPicture($smarty, $dbh, $pictureID);
+    });
+
     // run the router
     $router->run();
 

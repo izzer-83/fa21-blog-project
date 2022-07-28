@@ -20,4 +20,20 @@
     </div>
     <div class="col s12 m3"></div>
 </div>
+<div class="row">
+    {foreach $res as $r}
+        <div class="col s12 m4">
+            <div class="card blue-grey darken-1">
+            <div class="card-content white-text">
+                <span class="card-title"><a href="/picture_uploads/{$r.filename_new}" target="_blank" rel="noopener noreferrer">{$r.filename_original}</span></a>
+                <img src="/picture_uploads/{$r.filename_new}" alt="{$r.filename_original}" width="350" height="300">
+            </div>
+            <div class="card-action">
+                <a>Author: {$r.username}</a>
+                <a>Date: {$r.createdAt|date_format:"%d.%m.%y"}</a>
+            </div>
+            </div>
+        </div>
+    {/foreach}
+</div>
 {include file="components/footer.html"}

@@ -30,6 +30,7 @@
 
     // [POST] /register
     function postRegister($smarty, $dbh) {
+        
         if(isset($_POST['submit'])) {
             
             // error handling
@@ -49,31 +50,31 @@
             }
 
             // check if user already exist
-            if(isset($_POST['username']) && isset($_POST['username'])) {                
+            if(isset($_POST['username']) && isset($_POST['password'])) {                
                 try {
                     // username and password from the register form
-                    $username = htmlspecialchars($_POST['username']);
-                    $password = htmlspecialchars($_POST['password']);
+                    $username = $_POST['username'];
+                    $password = $_POST['password'];
                     
                     // encrypt password 
                     $enc_pw = hash('md5', $password);
 
                     // sql command
-                    $sql = "SELECT username, password, userID FROM user WHERE username = '$username'";
+                    $sql = "SELECT * FROM user WHERE username = '$username'";
                     
                     // prepare, execute and fetch the database
-                    $dbc = $dbh->prepare($sql);
-                    $dbc->execute();
-                    $res = $dbc->fetch();
-
+                    $stmt = $dbh->prepare($sql);
+                    $stmt->execute();
+                    $res = $stmt->fetch();
+                    
                     // error-handling: user already exist
-                    if ($username == $res['username']) {
+                    if ($username == $res['username'] ??= '') {
                         $error_msg .= 'The username is already in use...';
                         $error = true;
                     }
 
                     // user did not exist. insert the new user into the database
-                    if ($username != $res['username']) {
+                    if ($username != $res['username'] ??= '') {
 
                         try {
                             
@@ -329,21 +330,57 @@
     // [GET] /profile
     function getUserProfile($smarty, $dbh) {
 
-        $sql = "SELECT * FROM user WHERE username = '{$_SESSION['username']}'";
-        $stmt = $dbh->prepare($sql);
-        $stmt->execute();
+        try {
+            $sql = "SELECT * FROM user WHERE username = '{$_SESSION['username']}'";
+            $stmt = $dbh->prepare($sql);
+            $stmt->execute();
 
-        $res = $stmt->fetch(PDO::FETCH_ASSOC);
+            $resUser = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            $sql = "SELECT * FROM posts WHERE userID = '{$_SESSION['userID']}'";
+            $stmt = $dbh->prepare($sql);
+            $stmt->execute();
+
+            $resPosts = $stmt->fetchAll();
+
+            $sql = "SELECT * FROM pictures WHERE userID = '{$_SESSION['userID']}'";
+            $stmt = $dbh->prepare($sql);
+            $stmt->execute();
+
+            $resPictures = $stmt->fetchAll();
+
+            $smarty->assign('res', $resUser);
+            $smarty->assign('resPosts', $resPosts);
+            $smarty->assign('resPictures', $resPictures);
+            $smarty->assign('_SESSION', $_SESSION);
+            $smarty->display('user_profile.html');
+        }
+
+        catch (PDOException $e) {
+            echo 'Database-Error: ';
+            echo $e->getMessage();
+        }
         
-        $smarty->assign('res', $res);
-        $smarty->assign('_SESSION', $_SESSION);
-        $smarty->display('user_profile.html');
 
     }
 
     // [GET] /pictures
     function getPicturesIndex($smarty, $dbh) {
 
+        try {
+            $sql = "SELECT pictures.filename_original, pictures.filename_new, pictures.createdAt, user.username FROM pictures INNER JOIN user ON pictures.userID = user.userID;";
+            $stmt = $dbh->prepare($sql);
+            $stmt->execute();
+
+            $res = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        catch (PDOException $e) {
+            echo 'Database-Error:';
+            echo $e->getMessage();
+        }
+        
+        $smarty->assign('res', $res);
         $smarty->assign('_SESSION', $_SESSION);
         $smarty->display('picture-gallery.html');
 
@@ -364,16 +401,23 @@
 
                 // variable to check errors during upload
                 $uploadOk = true;
+                
                 // directory to upload the file into
-                $target_dir = '/opt/lampp/htdocs/picture_uploads/';
+                $target_dir = __DIR__ . '/../picture_uploads/';
                 
                 // original filename
                 $originalFilename = $_FILES['file']['name'];
+                
                 // cut the filename out of the string to get the file-extension
                 $fileextension = pathinfo($originalFilename, PATHINFO_EXTENSION);
+                
+                // uuid v4 generated filename
+                $newFilename = uuidv4() .'.'. $fileextension;
+                
                 // generate uuid v4 for the extension and combine it with the target directory and the
                 // file extension
-                $target_filename = $target_dir . $_FILES['file']['name'];                
+                $target_filename = $target_dir . $newFilename;                
+                
                 // size of the uploaded file
                 $filesize = $_FILES['file']['size'];
 
@@ -397,7 +441,25 @@
                 if ($uploadOk == true) {
                     
                     
-                    if(move_uploaded_file($_FILES['files']['tmp_name'], __DIR__ . '/../picture_uploads/'.$_FILES['file']['name'])) {
+                    if(move_uploaded_file($_FILES['file']['tmp_name'], $target_filename)) {
+                        
+                        try {
+                            $sql = "INSERT INTO pictures (userID, filename_original, filename_new, filesize) VALUES (:userID, :filename_original, :filename_new, :filesize)";
+                            $stmt = $dbh->prepare($sql);
+                            $stmt->execute([
+                            'userID' => $_SESSION['userID'],
+                            'filename_original' => $originalFilename,
+                            'filename_new' => $newFilename,
+                            'filesize' => $filesize
+                            ]);
+                        }
+
+                        catch(PDOException $e) {
+                            echo 'Database-Error:';
+                            echo $e->getMessage();
+                        }
+                        
+
                         $smarty->assign('_SESSION', $_SESSION);
                         $smarty->display('upload_success.html');
                     } else {
@@ -413,9 +475,90 @@
 
     }
 
+    function getEditBlogPost($smarty, $dbh, $postID) {
+        
+        try {
 
+            $sql = "SELECT * FROM posts WHERE postID = '$postID'";
+            $stmt = $dbh->prepare($sql);
+            $stmt->execute();
 
+            $res = $stmt->fetch();
 
+            $smarty->assign('res', $res);
+            $smarty->assign('_SESSION', $_SESSION);
+            $smarty->display('posts/edit_post.html');
+
+        }
+
+        catch (PDOException $e) {
+            echo 'Database-Error:';
+            echo $e->getMessage();
+        }
+
+    }
+
+    function postEditBlogPost($smarty, $dbh, $postID) {
+        if (isset($_POST['submit'])) {
+
+            $title = $_POST['title'];
+            $content = $_POST['content'];
+
+            try {
+
+                $sql = "UPDATE posts SET title = '$title', content = '$content' WHERE postID = '$postID'";
+                $stmt = $dbh->prepare($sql);
+                $stmt->execute();
+
+                $smarty->assign('_SESSION', $_SESSION);
+                $smarty->display('posts/edit_success.html');
+            }
+
+            catch(PDOException $e) {
+                echo 'Database-Error:';
+                echo $e->getMessage();
+            }
+
+        }
+    }
+
+    function getDelPost($smarty, $dbh, $postID) {
+
+        try {
+            
+            $sql = "DELETE FROM posts WHERE postID = '$postID'";
+            $stmt = $dbh->prepare($sql);
+            $stmt->execute();
+
+            $smarty->assign('_SESSION', $_SESSION);
+            $smarty->display('posts/delete_post.html');
+
+        } 
+        
+        catch (PDOException $e) {
+            echo $e->getMessage();
+        }
+
+    }
+
+    function getDelPicture($smarty, $dbh, $pictureID) {
+
+        try {
+            
+            $sql = "DELETE FROM pictures WHERE pictureID = '$pictureID'";
+            $stmt = $dbh->prepare($sql);
+            $stmt->execute();
+
+            $smarty->assign('_SESSION', $_SESSION);
+            $smarty->display('posts/delete_pic.html');
+
+        } 
+        
+        catch (PDOException $e) {
+            echo $e->getMessage();
+        }
+
+    }
 
 
 
@@ -431,5 +574,5 @@
         $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
     
         // Output the 36 character UUID.
-        return vsprintf('%s%s_%s_%s_%s_%s%s%s', str_split(bin2hex($data), 4));
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }
