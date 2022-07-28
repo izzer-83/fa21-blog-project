@@ -70,25 +70,30 @@
         getPicturesIndex($smarty, $dbh);
     });
 
+    // [POST] route to upload a new picture
     $router->post('/pictures', function() use ($smarty, $dbh) {
         postNewPicture($smarty, $dbh);
     });
 
+    // [GET] route to edit blog posts
     $router->get('/profile/posts/edit/(\d+)', function($postID) use ($smarty, $dbh)
     {
         getEditBlogPost($smarty, $dbh, $postID);
     });
     
+    // [POST] route to update the blog posts database entrys
     $router->post('/profile/posts/edit/(\d+)', function($postID) use ($smarty, $dbh)
     {
         postEditBlogPost($smarty, $dbh, $postID);
     });
 
+    // [GET] route to delete a blog post
     $router->get('/profile/posts/delete/(\d+)', function($postID) use ($smarty, $dbh)
     {
         getDelPost($smarty, $dbh, $postID);
     });
 
+    // [GET] route to delete a picture
     $router->get('/profile/pictures/delete/(\d+)', function($pictureID) use ($smarty, $dbh)
     {
         getDelPicture($smarty, $dbh, $pictureID);
